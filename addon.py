@@ -42,6 +42,7 @@ video_list_base =   "http://www.gametrailers.com/feeds/line_listing_results/vide
 
 console_list_base = {
     "xbox360":  "http://www.gametrailers.com/feeds/line_listing_results/platform_video_index/7735689f-1a2a-4784-b6af-7ebe6edc3dc5/?sortBy=most_recent",
+    "xbox-one": "http://www.gametrailers.com/feeds/line_listing_results/platform_video_index/be374856-0c7e-4260-8027-283ea432f344/?sortBy=most_recent",
     "ps4":      "http://www.gametrailers.com/feeds/line_listing_results/platform_video_index/d73075e8-95dd-4697-80df-67973db75705/?sortBy=most_recent",
     "ps3":      "http://www.gametrailers.com/feeds/line_listing_results/platform_video_index/bf20b32b-16b6-4507-8402-ed038d7aa9ed/?sortBy=most_recent",
     "wii-u":    "http://www.gametrailers.com/feeds/line_listing_results/platform_video_index/38970bbb-36e6-4403-a050-57edc1de0af2/?sortBy=most_recent",
@@ -89,6 +90,7 @@ def index():
 @plugin.route("/get_consoles/")
 def get_consoles():
     return [
+        {"label": get_string(40017), "icon": icon, "path": plugin.url_for("get_console_categories", console="xbox-one")},
         {"label": get_string(40010), "icon": icon, "path": plugin.url_for("get_console_categories", console="xbox360")},
         {"label": get_string(40011), "icon": icon, "path": plugin.url_for("get_console_categories", console="ps4")},
         {"label": get_string(40012), "icon": icon, "path": plugin.url_for("get_console_categories", console="ps3")},
