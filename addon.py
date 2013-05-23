@@ -23,6 +23,7 @@
 import xbmcaddon
 import xbmcgui
 import urllib2
+import urllib
 from xbmcswift2 import Plugin
 
 plugin = Plugin()
@@ -39,6 +40,7 @@ common.plugin = common.plugin = __plugin__ + __version__
 video_base =        "http://www.gametrailers.com/feeds/mediagen/?uri="
 video_info_base =   "http://www.gametrailers.com/feeds/mrss?uri="
 video_list_base =   "http://www.gametrailers.com/feeds/line_listing_results/video_hub/6bc9c4b7-0147-4861-9dac-7bfe8db9a141/?sortBy=most_recent"
+search_base =       "http://www.gametrailers.com/feeds/search/child/c9c01382-1f7c-4a3a-b68f-2e5ecc67fdd3/?sortBy=most_recent&tabName=videos&keywords="
 
 console_list_base = {
     "xbox360":  "http://www.gametrailers.com/feeds/line_listing_results/platform_video_index/7735689f-1a2a-4784-b6af-7ebe6edc3dc5/?sortBy=most_recent",
@@ -84,6 +86,7 @@ def index():
         {"label": get_string(40006), "icon": icon, "path": plugin.url_for("get_videos", url=video_list_base + "&category=Features", page=1, multi_part=False)},
         {"label": get_string(40007), "icon": icon, "path": plugin.url_for("get_videos", url=video_list_base + "&category=Preview", page=1, multi_part=False)},
         {"label": get_string(40008), "icon": icon, "path": plugin.url_for("get_videos", url=video_list_base + "&category=Review", page=1, multi_part=False)},
+        {"label": get_string(40018), "icon": icon, "path": plugin.url_for("search")},
     ]
 
 
@@ -152,7 +155,18 @@ def get_show_episodes(url, multi_part):
 def get_videos(url, page, multi_part):
     list_items = list()
     data = urllib2.urlopen(url + "&currentPage=" + str(page)).read().decode("utf-8", "ignore")
-    items = common.parseDOM(html=data, name="li")
+
+    if "feeds/search/child" in url: # Search results
+        # This is hacky but parseDOM can only get the content from DOM element, not the element itself.
+        # Get the id of the element, get element content and then rebuild it.
+        ids = common.parseDOM(html=data, name="div", ret="data-contentId")
+        items = common.parseDOM(html=data, name="div", attrs={"class": "video_information"})
+        for i in range(len(items)):
+            new_div = "<div class=\"video_information\" data-contentId=\"" + ids[i] + "\">" + items[i] + "</div>"
+            items[i] = new_div
+    else:
+        items = common.parseDOM(html=data, name="li")
+
     media_items = [x for x in items if "video_information" in x]
     pagination = common.parseDOM(html=data, name="div", attrs={"class": "pagination"})
 
@@ -162,7 +176,7 @@ def get_videos(url, page, multi_part):
         title_b = common.replaceHTMLCodes(common.stripTags(common.parseDOM(html=item, name="h4")[0]))
         title = "%s - %s" % (title_a, title_b)
         image = common.parseDOM(html=item, name="meta", attrs={"itemprop": "thumbnailUrl"}, ret="content")[0]
-        is_playable = multi_part == "False"
+        is_playable = multi_part == "False" or multi_part == False
 
         if is_playable == False:
             path = plugin.url_for("get_multi_part", video_id=item_id, image=image)
@@ -194,6 +208,17 @@ def get_multi_part(video_id, image):
         act_list.append({"label": title, "thumbnail": image, "path": plugin.url_for("play_video", path=path), "is_playable": True})
     
     return act_list
+
+
+@plugin.route("/search/")
+def search():
+    kb = xbmc.Keyboard("", get_string(40019), False)
+    kb.doModal()
+    if kb.isConfirmed():
+        text = urllib.quote_plus(kb.getText())
+        url = search_base + text
+        return get_videos(url=url, page=1, multi_part=False)
+    return
 
 
 @plugin.route("/play/<path>/")
